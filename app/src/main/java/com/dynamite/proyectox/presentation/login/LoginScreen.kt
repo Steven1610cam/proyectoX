@@ -12,8 +12,7 @@ import com.dynamite.proyectox.common.Resource
 
 @Composable
 fun LoginScreen(
-    // En una app real, aquí tendrías callbacks para la navegación,
-    // por ejemplo: onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit, // PARÁMETRO AÑADIDO
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     var email by remember { mutableStateOf("") }
@@ -50,7 +49,7 @@ fun LoginScreen(
         Button(
             onClick = { viewModel.login(email, password) },
             modifier = Modifier.fillMaxWidth(),
-            enabled = loginState !is Resource.Loading // Deshabilitar si está cargando
+            enabled = loginState !is Resource.Loading
         ) {
             Text("Login")
         }
@@ -61,21 +60,18 @@ fun LoginScreen(
                 CircularProgressIndicator()
             }
             is Resource.Success -> {
-                if (loginState.data == true) { // loginState.data es el Booleano
-                    // Aquí podrías navegar a la siguiente pantalla o mostrar un mensaje de éxito.
-                    // Por ahora, solo un Text.
-                    Text("¡Login Exitoso!")
-                    // Ejemplo de cómo podrías llamar a un callback de navegación:
-                    // LaunchedEffect(Unit) {
-                    //     onLoginSuccess()
-                    // }
+                if (loginState.data == true) {
+                    // Llamar al callback para navegar
+                    LaunchedEffect(key1 = Unit) { // key1 = Unit para que se ejecute solo una vez cuando entre aquí
+                        onLoginSuccess()
+                    }
                 }
             }
             is Resource.Error -> {
                 Text("Error: ${loginState.message}", color = MaterialTheme.colorScheme.error)
             }
             else -> {
-                // Estado inicial o no manejado
+                // Estado inicial o no manejado (por ejemplo, antes del primer intento de login)
             }
         }
     }

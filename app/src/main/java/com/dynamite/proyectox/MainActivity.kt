@@ -6,21 +6,21 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text // Import para el Text de ejemplo en HomeScreen
+// import androidx.compose.material3.Text // No longer needed directly here if HomeScreen is separate
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.dynamite.proyectox.presentation.login.LoginScreen // Asegúrate que esta ruta sea correcta
+import com.dynamite.proyectox.presentation.login.LoginScreen
+import com.dynamite.proyectox.presentation.home.HomeScreen // Import HomeScreen
 import com.dynamite.proyectox.ui.theme.ProyectoXTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 // Definición de rutas
 sealed class Screen(val route: String) {
     object LoginScreen : Screen("login_screen")
-    // Podrías añadir más pantallas aquí, ej:
-    // object HomeScreen : Screen("home_screen")
+    object HomeScreen : Screen("home_screen") // AÑADIDO HomeScreen
 }
 
 @AndroidEntryPoint
@@ -46,13 +46,17 @@ fun AppNavigation() {
     NavHost(navController = navController, startDestination = Screen.LoginScreen.route) {
         composable(route = Screen.LoginScreen.route) {
             LoginScreen(
-                // Aquí podrías pasar un callback para navegar tras un login exitoso
-                // Ejemplo: onLoginSuccess = { navController.navigate(Screen.HomeScreen.route) { popUpTo(Screen.LoginScreen.route) { inclusive = true } } }
+                onLoginSuccess = {
+                    navController.navigate(Screen.HomeScreen.route) {
+                        popUpTo(Screen.LoginScreen.route) {
+                            inclusive = true // Para que LoginScreen se elimine del backstack
+                        }
+                    }
+                }
             )
         }
-        // composable(route = Screen.HomeScreen.route) {
-        //     // Aquí iría tu HomeScreen
-        //     Text("¡Bienvenido a la pantalla principal!")
-        // }
+        composable(route = Screen.HomeScreen.route) {
+            HomeScreen() // Muestra HomeScreen
+        }
     }
 }
