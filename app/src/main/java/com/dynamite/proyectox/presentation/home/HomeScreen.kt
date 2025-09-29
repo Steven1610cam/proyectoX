@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Visibility // Icono de ejemplo para el ojo
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,13 +21,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController // IMPORT AÑADIDO
+import com.dynamite.proyectox.Screen // IMPORT AÑADIDO
 import com.dynamite.proyectox.common.Resource
 import com.dynamite.proyectox.domain.model.Table
 import com.dynamite.proyectox.domain.model.TableStatus
 
-@OptIn(ExperimentalMaterial3Api::class) // Necesario para Scaffold y otros componentes de M3
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    navController: NavController, // PARÁMETRO AÑADIDO
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val tablesState = viewModel.tablesState.value
@@ -44,10 +47,10 @@ fun HomeScreen(
         bottomBar = {
             HomeBottomBar()
         }
-    ) { innerPadding -> // Padding proporcionado por Scaffold para el contenido
+    ) { innerPadding ->
         Box(
             modifier = Modifier
-                .padding(innerPadding) // Aplicar el padding para evitar solapamiento
+                .padding(innerPadding)
                 .fillMaxSize()
         ) {
             when (tablesState) {
@@ -65,7 +68,6 @@ fun HomeScreen(
                 is Resource.Success -> {
                     val tables = tablesState.data
                     if (tables.isNullOrEmpty()) {
-                        // Este caso es menos probable ahora que siempre hay al menos una mesa
                         Text(
                             text = "No hay mesas. ¡Añade una!",
                             modifier = Modifier.align(Alignment.Center),
@@ -75,15 +77,18 @@ fun HomeScreen(
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp), // Espacio alrededor de la cuadrícula
+                            contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             items(tables) { table ->
-                                TableCardItem(table = table, onClick = {
-                                    // TODO: Implementar acción al hacer clic en una mesa
-                                    println("Mesa ${table.number} clickeada")
-                                })
+                                TableCardItem(
+                                    table = table,
+                                    onClick = {
+                                        // Navegar a OrderScreen con el número de mesa
+                                        navController.navigate(Screen.OrderScreen.withArgs(table.number))
+                                    }
+                                )
                             }
                         }
                     }
@@ -102,10 +107,9 @@ fun HomeTopAppBar() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // TODO: Considerar usar una imagen para el logo "CharlyHot"
                 Text(
                     "CharlyHot",
-                    style = MaterialTheme.typography.headlineSmall, // Un tamaño más prominente
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -119,18 +123,17 @@ fun HomeTopAppBar() {
                 Icon(Icons.Filled.Visibility, contentDescription = "Visualizar")
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors( // Colores de ejemplo
-            containerColor = MaterialTheme.colorScheme.surfaceVariant, // Un color sutil para el fondo
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
             titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        // Puedes añadir un Modifier.height() si necesitas un TopAppBar más alto
     )
 }
 
 @Composable
 fun HomeBottomBar() {
     BottomAppBar(
-        containerColor = MaterialTheme.colorScheme.surfaceVariant, // Coherente con el TopAppBar
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
     ) {
         Row(
@@ -138,7 +141,6 @@ fun HomeBottomBar() {
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Los puntos naranjas pueden ser emojis o pequeños Box con fondo naranja y forma de círculo
             Text("🔸 Comida rápida de calidad 🔸", style = MaterialTheme.typography.labelMedium)
         }
     }
@@ -152,32 +154,32 @@ fun TableCardItem(
     onClick: () -> Unit
 ) {
     val cardColor = when (table.status) {
-        TableStatus.FREE -> Color(0xFFFFE082) // Un amarillo claro, similar al de la imagen
-        TableStatus.OCCUPIED -> Color(0xFFE0E0E0) // Un gris para ocupado
-        TableStatus.BILL_REQUESTED -> Color(0xFF81D4FA) // Un azul para cuenta pedida
+        TableStatus.FREE -> Color(0xFFFFE082)
+        TableStatus.OCCUPIED -> Color(0xFFE0E0E0)
+        TableStatus.BILL_REQUESTED -> Color(0xFF81D4FA)
     }
 
     Card(
         modifier = Modifier
-            .aspectRatio(1f) // Para que sea cuadrado
+            .aspectRatio(1f)
             .clip(RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        onClick = onClick
+        onClick = onClick // Se llama al lambda proporcionado
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp), // Padding interno para los elementos
+                .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "Mesa ${table.number}", // Ajustado para que sea "Mesa X"
-                    fontSize = 20.sp, // Tamaño ajustado para prominencia
+                    text = "Mesa ${table.number}",
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.DarkGray // Un color que contraste con el amarillo
+                    color = Color.DarkGray
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Box(
