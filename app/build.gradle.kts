@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.dynamite.proyectox"
-    compileSdk = 34
+    compileSdk = 36 // ACTUALIZADO
 
     defaultConfig {
         applicationId = "com.dynamite.proyectox"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36 // ACTUALIZADO
         versionCode = 1
         versionName = "1.0"
 
@@ -60,13 +60,15 @@ dependencies {
     implementation(libs.androidx.compose.ui) 
     implementation(libs.androidx.compose.ui.graphics) 
     implementation(libs.androidx.compose.ui.tooling.preview) 
-    implementation(libs.androidx.compose.material3) // CORREGIDO
+    implementation(libs.androidx.compose.material3)
+
+    // Navigation Compose
+    implementation(libs.androidx.navigation.compose) // AÑADIDA
 
     // Hilt Dependencies
     implementation("com.google.dagger:hilt-android:2.51.1")
     kapt("com.google.dagger:hilt-compiler:2.51.1")
-    // Hilt Navigation Compose (opcional, pero útil si usas Navigation Compose)
-    // implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0") 
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
