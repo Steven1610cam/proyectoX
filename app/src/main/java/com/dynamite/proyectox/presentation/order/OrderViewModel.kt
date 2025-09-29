@@ -1,11 +1,15 @@
 package com.dynamite.proyectox.presentation.order
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
+// Imports para StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow // Para exponer como StateFlow
+import kotlinx.coroutines.flow.update // Para actualizar StateFlow de forma segura
+
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dynamite.proyectox.ARG_TABLE_NUMBER // Importa la constante de MainActivity
+import com.dynamite.proyectox.ARG_TABLE_NUMBER
 import com.dynamite.proyectox.common.Resource
 import com.dynamite.proyectox.domain.model.Product
 import com.dynamite.proyectox.domain.usecase.product.GetProductsUseCase
@@ -16,50 +20,72 @@ import javax.inject.Inject
 @HiltViewModel
 class OrderViewModel @Inject constructor(
     private val getProductsUseCase: GetProductsUseCase,
-    savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _tableNumber = mutableStateOf<Int?>(null)
-    val tableNumber: State<Int?> = _tableNumber
-
-    private val _productsState = mutableStateOf<Resource<List<Product>>>(Resource.Loading())
-    val productsState: State<Resource<List<Product>>> = _productsState
-
-    // Futuros estados para la UI de OrderScreen
-    // private val _selectedCategory = mutableStateOf<String?>(null)
-    // val selectedCategory: State<String?> = _selectedCategory
-
-    // private val _searchQuery = mutableStateOf("")
-    // val searchQuery: State<String> = _searchQuery
+    // Cambiado a MutableStateFlow
+    private val _uiState = MutableStateFlow(OrderScreenState())
+    // Expuesto como StateFlow (inmutable desde el exterior)
+    val uiState: StateFlow<OrderScreenState> = _uiState.asStateFlow()
 
     init {
-        savedStateHandle.get<Int>(ARG_TABLE_NUMBER)?.let { number ->
-            _tableNumber.value = number
+        val initialTableNumber = savedStateHandle.get<Int>(ARG_TABLE_NUMBER)
+        // Usar .update para modificar el StateFlow de forma segura
+        _uiState.update { currentState ->
+            currentState.copy(
+                tableNumber = initialTableNumber,
+                selectedCategory = currentState.categories.firstOrNull()
+            )
         }
-        loadProducts() // Cargar todos los productos inicialmente
+        loadProducts(category = _uiState.value.selectedCategory)
     }
 
-    fun loadProducts(category: String? = null) {
+    fun loadProducts(category: String? = _uiState.value.selectedCategory) {
         viewModelScope.launch {
-            _productsState.value = Resource.Loading()
+            _uiState.update { it.copy(isLoading = true, productsResource = Resource.Loading()) }
             try {
-                val result = getProductsUseCase(category = category) // Pasar la categoría si existe
+                val currentCategory = category ?: _uiState.value.selectedCategory
+                val result = getProductsUseCase(category = currentCategory)
+
                 if (result.isSuccess) {
-                    _productsState.value = Resource.Success(result.getOrDefault(emptyList()))
+                    _uiState.update {
+                        it.copy(
+                            productsResource = Resource.Success(result.getOrDefault(emptyList())),
+                            isLoading = false
+                        )
+                    }
                 } else {
-                    _productsState.value = Resource.Error(
-                        result.exceptionOrNull()?.message ?: "Error desconocido al cargar productos"
-                    )
+                    _uiState.update {
+                        it.copy(
+                            productsResource = Resource.Error(
+                                result.exceptionOrNull()?.message ?: "Error al cargar productos"
+                            ),
+                            isLoading = false
+                        )
+                    }
                 }
             } catch (e: Exception) {
-                _productsState.value = Resource.Error(
-                    e.message ?: "Error inesperado al cargar productos"
-                )
+                _uiState.update {
+                    it.copy(
+                        productsResource = Resource.Error(
+                            e.message ?: "Error inesperado al cargar productos"
+                        ),
+                        isLoading = false
+                    )
+                }
             }
         }
     }
 
-    // Funciones futuras para manejar la selección de categoría, búsqueda, etc.
-    // fun onCategorySelected(category: String) { ... }
-    // fun onSearchQueryChanged(query: String) { ... }
+    fun onSearchQueryChanged(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun onCategorySelected(category: String) {
+        _uiState.update { it.copy(selectedCategory = category) }
+        loadProducts(category = category)
+    }
+
+    // TODO: Función para añadir producto al carrito (actualizará algún estado del pedido)
+    // fun onAddProductToCart(product: Product) { ... }
 }

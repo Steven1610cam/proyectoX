@@ -1,22 +1,29 @@
 package com.dynamite.proyectox
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-// import androidx.navigation.NavHostController // No es necesario aquí directamente
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.dynamite.proyectox.presentation.cart.CartScreen
+import com.dynamite.proyectox.presentation.cart.CartViewModel
 import com.dynamite.proyectox.presentation.home.HomeScreen
 import com.dynamite.proyectox.presentation.login.LoginScreen
-import com.dynamite.proyectox.presentation.order.OrderScreen // IMPORT AÑADIDO
+import com.dynamite.proyectox.presentation.order.OrderScreen
+import com.dynamite.proyectox.presentation.order.OrderViewModel
 import com.dynamite.proyectox.ui.theme.ProyectoXTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -28,6 +35,11 @@ sealed class Screen(val route: String) {
     object LoginScreen : Screen("login_screen")
     object HomeScreen : Screen("home_screen")
     object OrderScreen : Screen("order_screen/{$ARG_TABLE_NUMBER}") {
+        fun withArgs(tableNumber: Int): String {
+            return route.replace("{$ARG_TABLE_NUMBER}", tableNumber.toString())
+        }
+    }
+    object CartScreen : Screen("cart_screen/{$ARG_TABLE_NUMBER}") { 
         fun withArgs(tableNumber: Int): String {
             return route.replace("{$ARG_TABLE_NUMBER}", tableNumber.toString())
         }
@@ -54,6 +66,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+
     NavHost(navController = navController, startDestination = Screen.LoginScreen.route) {
         composable(route = Screen.LoginScreen.route) {
             LoginScreen(
@@ -65,14 +78,61 @@ fun AppNavigation() {
             )
         }
         composable(route = Screen.HomeScreen.route) {
-            HomeScreen(navController = navController) // Pasamos navController
+            HomeScreen(navController = navController)
         }
         composable(
             route = Screen.OrderScreen.route,
             arguments = listOf(navArgument(ARG_TABLE_NUMBER) { type = NavType.IntType })
-        ) { /* backStackEntry -> */ // backStackEntry ya no se usa directamente aquí
-            // val tableNumber = backStackEntry.arguments?.getInt(ARG_TABLE_NUMBER) ?: 0 // No es necesario pasarla
-            OrderScreen(navController = navController) // CORREGIDO
+        ) { backStackEntry -> 
+            val orderViewModel: OrderViewModel = hiltViewModel()
+            val cartViewModel: CartViewModel = hiltViewModel() 
+            Log.d("ViewModelCheck", "OrderScreen getting CartVM: $cartViewModel, Activity: ${LocalContext.current as? ComponentActivity}")
+
+            val orderUiState by orderViewModel.uiState.collectAsStateWithLifecycle()
+            val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+            
+            val tableNumber = backStackEntry.arguments?.getInt(ARG_TABLE_NUMBER) ?: 0
+
+            OrderScreen(
+                navController = navController,
+                state = orderUiState,
+                cartItemCount = cartUiState.cartItems.size, 
+                onSearchQueryChanged = orderViewModel::onSearchQueryChanged,
+                onCategorySelected = orderViewModel::onCategorySelected,
+                onAddProductClicked = { product ->
+                    cartViewModel.addProductToCart(product)
+                },
+                onNavigateToCart = {
+                    if (tableNumber != 0) { 
+                        navController.navigate(Screen.CartScreen.withArgs(tableNumber))
+                    } else {
+                        Log.e("ViewModelCheck", "Invalid tableNumber to navigate to CartScreen from OrderScreen")
+                    }
+                }
+            )
+        }
+        composable(
+            route = Screen.CartScreen.route, 
+            arguments = listOf(navArgument(ARG_TABLE_NUMBER) { type = NavType.IntType })
+        ) { backStackEntry ->
+            val viewModel: CartViewModel = hiltViewModel() 
+            Log.d("ViewModelCheck", "CartScreen getting CartVM: $viewModel, Activity: ${LocalContext.current as? ComponentActivity}")
+
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val tableNumber = backStackEntry.arguments?.getInt(ARG_TABLE_NUMBER) ?: 0
+
+            CartScreen(
+                navController = navController,
+                tableNumber = tableNumber, 
+                state = uiState, 
+                onIncrementItem = viewModel::incrementQuantity,
+                onDecrementItem = viewModel::decrementQuantity,
+                onRemoveItem = viewModel::removeItem,
+                onNotesChanged = viewModel::updateNotes,
+                onSubmitOrder = {
+                    Log.d("ViewModelCheck", "Submit order clicked from CartScreen with CartVM: $viewModel")
+                }
+            )
         }
     }
 }
