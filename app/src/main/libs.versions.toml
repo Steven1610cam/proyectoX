@@ -1,0 +1,9 @@
+toml
+[versions]
+agp = "8.13.0"
+kotlin = "2.0.21"  # Esta es la versión de Kotlin que tienes definida
+# ... otras versiones
+composeCompiler = "1.5.14" # <-- AÑADE ESTA LÍNEA (usa la versión compatible con tu versión de Kotlin)
+lifecycleRuntimeKtx = "2.9.4"
+# ... el resto de tus versiones
+    
