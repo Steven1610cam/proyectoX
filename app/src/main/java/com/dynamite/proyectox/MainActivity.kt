@@ -10,7 +10,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
@@ -86,7 +85,7 @@ fun AppNavigation() {
         ) { backStackEntry -> 
             val orderViewModel: OrderViewModel = hiltViewModel()
             val cartViewModel: CartViewModel = hiltViewModel() 
-            Log.d("ViewModelCheck", "OrderScreen getting CartVM: $cartViewModel, Activity: ${LocalContext.current as? ComponentActivity}")
+            Log.d("ViewModelCheck", "OrderScreen getting CartVM: $cartViewModel")
 
             val orderUiState by orderViewModel.uiState.collectAsStateWithLifecycle()
             val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
@@ -116,7 +115,7 @@ fun AppNavigation() {
             arguments = listOf(navArgument(ARG_TABLE_NUMBER) { type = NavType.IntType })
         ) { backStackEntry ->
             val viewModel: CartViewModel = hiltViewModel() 
-            Log.d("ViewModelCheck", "CartScreen getting CartVM: $viewModel, Activity: ${LocalContext.current as? ComponentActivity}")
+            Log.d("ViewModelCheck", "CartScreen getting CartVM: $viewModel
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val tableNumber = backStackEntry.arguments?.getInt(ARG_TABLE_NUMBER) ?: 0
